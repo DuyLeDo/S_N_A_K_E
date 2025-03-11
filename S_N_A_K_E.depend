@@ -1,0 +1,15 @@
+# depslib dependency file v1.0
+1741687438 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
+	<iostream>
+	<SDL.h>
+	<SDL_image.h>
+	"graphics.h"
+	"defs.h"
+
+1741687216 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
+	<SDL.h>
+	<SDL_image.h>
+	"defs.h"
+
+1741687491 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+
