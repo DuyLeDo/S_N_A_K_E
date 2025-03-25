@@ -1,11 +1,15 @@
+/*#ifndef _logic__H
+#define _logic__H
+
 #include <iostream>
 #include <SDL.h>
 #include <vector>
 #include <cmath>
 #include "graphics.h"
 #include "defs.h"
-#include "logic.h"
-using namespace std;
+
+
+
 struct SnakeSegment {
     float x, y;
 };
@@ -21,11 +25,6 @@ struct SnakeGame {
     int foodEatenCount = 0;  // Đếm số lần rắn ăn thức ăn
     bool isSpecialFood = false;  // Biến kiểm tra thức ăn đặc biệt
     int pendingGrowth = 0;
-
-    Uint8 foodAlpha = 255; // Độ trong suốt của thức ăn (255 là không trong suốt)
-bool isFading = false;  // Cờ để kiểm tra có đang làm hiệu ứng mờ không
-Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dần
-
 
     SnakeGame() {
         snake.push_back({SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
@@ -49,19 +48,6 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
     Uint32 currentTime = SDL_GetTicks();
     lastUpdateTime = currentTime;
 
-    // Xử lý hiệu ứng mờ dần
-    if (isFading) {
-        Uint32 elapsedTime = currentTime - fadeStartTime;
-        if (elapsedTime >= 200) {  // Sau 200ms thì spawn thức ăn mới
-            spawnFood();
-            foodAlpha = 255;
-            isFading = false;
-        } else {
-            foodAlpha = 255 - (elapsedTime * 255 / 200);  // Giảm dần độ trong suốt
-        }
-    }
-
-    // Di chuyển rắn
     SnakeSegment &head = snake.front();
     SnakeSegment newHead = head;
 
@@ -87,7 +73,8 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
         if (isSpecialFood) {
             pendingGrowth = snake.size() * 2;
         }
-        if (speed < 6.0f) speed += 0.005f;
+        spawnFood();
+        if (speed < 6.0f) speed += 0.001f;
     } else {
         if (pendingGrowth > 0) {
             pendingGrowth--;
@@ -99,19 +86,14 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
 
 
         bool checkFoodCollision(const SnakeSegment &head) {
-    SDL_Rect headRect = {static_cast<int>(head.x), static_cast<int>(head.y), GRID_SIZE, GRID_SIZE};
-    SDL_Rect foodRect = {static_cast<int>(food.x), static_cast<int>(food.y), GRID_SIZE, GRID_SIZE};
-
-    if (SDL_HasIntersection(&headRect, &foodRect)) {
-        foodEatenCount++;
-        isFading = true;
-        fadeStartTime = SDL_GetTicks();  // Lưu thời điểm bắt đầu mờ dần
-        return true;
+        SDL_Rect headRect = {static_cast<int>(head.x), static_cast<int>(head.y), GRID_SIZE, GRID_SIZE};
+        SDL_Rect foodRect = {static_cast<int>(food.x), static_cast<int>(food.y), GRID_SIZE, GRID_SIZE};
+        if (SDL_HasIntersection(&headRect, &foodRect)) {
+            foodEatenCount++;
+            return true;
+        }
+        return false;
     }
-    return false;
-}
-
-
 
     bool checkCollision(const SnakeSegment &head) {
     if (head.x < 0 || head.y < 0 || head.x >= SCREEN_WIDTH || head.y >= SCREEN_HEIGHT)
@@ -133,12 +115,11 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
     food.y = (rand() % (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE;
 
     // Chỉ đánh dấu special food cho lần tiếp theo
-    if (foodEatenCount % 6 == 0 && foodEatenCount != 0) {
-    isSpecialFood = true;
-} else {
-    isSpecialFood = false;
-}
-
+    if ((foodEatenCount+1) % 6 == 0) {
+        isSpecialFood = true;
+    } else {
+        isSpecialFood = false;
+    }
 }
 
 
@@ -172,42 +153,17 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
             }
         }
 
-        SDL_Color foodColor;
-        if (isSpecialFood) {
-            foodColor = {255, 165, 0, foodAlpha};  // Màu cam
-        } else {
-            foodColor = {255, 0, 0, foodAlpha};    // Màu đỏ
-        }
+        SDL_Color foodColor = isSpecialFood ? SDL_Color{255, 165, 0, 255} : SDL_Color{255, 0, 0, 255};
         int foodSize = isSpecialFood ? GRID_SIZE / 2 : GRID_SIZE / 3;
+
         renderCircle(graphics.renderer, food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, foodSize, foodColor);
-
-
-
-
-
 
         SDL_RenderPresent(graphics.renderer);
     }
 };
 
 
-int main(int argc, char * argv[]) {
-    Graphics graphics;
-    graphics.init();
 
-    SnakeGame snakeGame;
 
-    while (snakeGame.isRunning) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) snakeGame.isRunning = false;
-            snakeGame.handleInput(e);
-        }
-
-        snakeGame.update();
-        snakeGame.render(graphics);
-
-        SDL_Delay(16);
-    }
-    return 0;
-}
+#endif
+*/

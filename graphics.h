@@ -25,8 +25,20 @@ struct ScrollingBackground {
 struct Graphics {
     SDL_Renderer *renderer;
 	SDL_Window *window;
-	int X=0,Y=0;
-    int size = 30;
+	int X=200,Y=400;
+	///vector <SDL_Rect> a;
+    int size = 10;
+    void frame()
+{
+SDL_Rect rect = {0,150,400,561};
+SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+for (int i = 0; i < 10; i++) {
+        SDL_RenderDrawRect(renderer, &rect);
+        rect.x++; rect.y++;
+        rect.w-=2; rect.h -= 2;
+    }
+
+}
 	void logErrorAndExit(const char* msg, const char* error)
     {
         SDL_LogMessage(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_ERROR, "%s: %s", msg, error);
@@ -121,7 +133,7 @@ struct Graphics {
          filled_rect.y=Y;
          filled_rect.w=size;
          filled_rect.h=size;
-         SDL_SetRenderDrawColor(renderer,0,0,0,255);
+         SDL_SetRenderDrawColor(renderer,255,0,0,255);
          SDL_RenderFillRect (renderer, &filled_rect);
          //SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 
@@ -129,4 +141,5 @@ struct Graphics {
     }
 };
 
-#endif // _GRAPHICS__H
+#endif
+

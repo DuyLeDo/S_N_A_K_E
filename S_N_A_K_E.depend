@@ -1,15 +1,25 @@
 # depslib dependency file v1.0
-1741687438 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
+1742908862 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
 	<iostream>
 	<SDL.h>
-	<SDL_image.h>
+	<vector>
+	<cmath>
 	"graphics.h"
 	"defs.h"
+	"logic.h"
 
-1741687216 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
+1742048858 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
 	<SDL.h>
 	<SDL_image.h>
 	"defs.h"
 
-1741687491 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+1742128064 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+
+1742807529 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\logic.h
+	<iostream>
+	<SDL.h>
+	<vector>
+	<cmath>
+	"graphics.h"
+	"defs.h"
 
