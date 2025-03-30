@@ -1,4 +1,3 @@
-#include <iostream>
 #include <SDL.h>
 #include <vector>
 #include <cmath>
@@ -6,6 +5,7 @@
 #include "defs.h"
 #include "logic.h"
 using namespace std;
+
 struct SnakeSegment {
     float x, y;
 };
@@ -18,21 +18,18 @@ struct SnakeGame {
     SnakeSegment food;
     Uint32 lastUpdateTime = 0;
     float speed = 2.0f;
-    int foodEatenCount = 0;  // Đếm số lần rắn ăn thức ăn
-    bool isSpecialFood = false;  // Biến kiểm tra thức ăn đặc biệt
-    int pendingGrowth = 0;
-
-    Uint8 foodAlpha = 255; // Độ trong suốt của thức ăn (255 là không trong suốt)
-bool isFading = false;  // Cờ để kiểm tra có đang làm hiệu ứng mờ không
-Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dần
-
+    int foodEatenCount = 0;
+    bool isSpecialFood = false;
+    double pendingGrowth = 0;
+    Uint8 foodAlpha = 255;
+    bool isFading = false;
+    Uint32 fadeStartTime = 0;
 
     SnakeGame() {
         snake.push_back({SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
         spawnFood();
         lastUpdateTime = SDL_GetTicks();
     }
-
 
     void handleInput(SDL_Event &e) {
         if (e.type == SDL_KEYDOWN) {
@@ -45,104 +42,124 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
         }
     }
 
-    void update() {
-    Uint32 currentTime = SDL_GetTicks();
-    lastUpdateTime = currentTime;
+    void update(Graphics &graphics) {
+        Uint32 currentTime = SDL_GetTicks();
+        lastUpdateTime = currentTime;
 
-    // Xử lý hiệu ứng mờ dần
-    if (isFading) {
-        Uint32 elapsedTime = currentTime - fadeStartTime;
-        if (elapsedTime >= 200) {  // Sau 200ms thì spawn thức ăn mới
-            spawnFood();
-            foodAlpha = 255;
-            isFading = false;
+        if (isFading) {
+            Uint32 elapsedTime = currentTime - fadeStartTime;
+            if (elapsedTime >= 200) {
+                spawnFood();
+                foodAlpha = 255;
+                isFading = false;
+            } else {
+                foodAlpha = 255 - (elapsedTime * 255 / 200);
+            }
+        }
+
+        SnakeSegment &head = snake.front();
+        SnakeSegment newHead = head;
+
+        if (fabs(fmod(head.x, GRID_SIZE)) < speed && fabs(fmod(head.y, GRID_SIZE)) < speed) {
+            direction = nextDirection;
+        }
+
+        switch (direction) {
+            case DIR_UP:    newHead.y -= speed; break;
+            case DIR_DOWN:  newHead.y += speed; break;
+            case DIR_LEFT:  newHead.x -= speed; break;
+            case DIR_RIGHT: newHead.x += speed; break;
+        }
+
+        if (checkCollision(newHead)) {
+            isRunning = false;
+            graphics.playSound(graphics.gameOverSound); // Sử dụng gameOverSound từ Graphics
+            return;
+        }
+
+        snake.insert(snake.begin(), newHead);
+
+        if (checkFoodCollision(newHead)) {
+            graphics.playSound(graphics.eatSound); // Sử dụng eatSound từ Graphics
+            if (isSpecialFood) {
+                pendingGrowth = snake.size() * 2;
+            }
+            if (speed < 6.0f) speed += 0.01f;
         } else {
-            foodAlpha = 255 - (elapsedTime * 255 / 200);  // Giảm dần độ trong suốt
+            if (pendingGrowth > 0) {
+                pendingGrowth -= 2;
+            } else {
+                snake.pop_back();
+            }
         }
     }
 
-    // Di chuyển rắn
-    SnakeSegment &head = snake.front();
-    SnakeSegment newHead = head;
+    // Sửa hàm checkFoodCollision: sử dụng làm tròn tọa độ để so sánh
+    bool checkFoodCollision(const SnakeSegment &head) {
+        if (isFading)
+        return false;
 
-    if (fabs(fmod(head.x, GRID_SIZE)) < speed && fabs(fmod(head.y, GRID_SIZE)) < speed) {
-        direction = nextDirection;
-    }
+        int headX = round(head.x / GRID_SIZE) * GRID_SIZE;
+        int headY = round(head.y / GRID_SIZE) * GRID_SIZE;
+        int foodX = static_cast<int>(food.x);
+        int foodY = static_cast<int>(food.y);
 
-    switch (direction) {
-        case DIR_UP:    newHead.y -= speed; break;
-        case DIR_DOWN:  newHead.y += speed; break;
-        case DIR_LEFT:  newHead.x -= speed; break;
-        case DIR_RIGHT: newHead.x += speed; break;
-    }
-
-    if (checkCollision(newHead)) {
-        isRunning = false;
-        return;
-    }
-
-    snake.insert(snake.begin(), newHead);
-
-    if (checkFoodCollision(newHead)) {
-        if (isSpecialFood) {
-            pendingGrowth = snake.size() * 2;
+        if (headX == foodX && headY == foodY) {
+            foodEatenCount++;
+            if (isSpecialFood) {
+                pendingGrowth = snake.size() * 1.5;
+            }
+            isFading = true;
+            fadeStartTime = SDL_GetTicks();
+            return true;
         }
-        if (speed < 6.0f) speed += 0.005f;
-    } else {
-        if (pendingGrowth > 0) {
-            pendingGrowth--;
-        } else {
-            snake.pop_back();
-        }
+        return false;
     }
-}
-
-
-        bool checkFoodCollision(const SnakeSegment &head) {
-    SDL_Rect headRect = {static_cast<int>(head.x), static_cast<int>(head.y), GRID_SIZE, GRID_SIZE};
-    SDL_Rect foodRect = {static_cast<int>(food.x), static_cast<int>(food.y), GRID_SIZE, GRID_SIZE};
-
-    if (SDL_HasIntersection(&headRect, &foodRect)) {
-        foodEatenCount++;
-        isFading = true;
-        fadeStartTime = SDL_GetTicks();  // Lưu thời điểm bắt đầu mờ dần
-        return true;
-    }
-    return false;
-}
-
-
 
     bool checkCollision(const SnakeSegment &head) {
-    if (head.x < 0 || head.y < 0 || head.x >= SCREEN_WIDTH || head.y >= SCREEN_HEIGHT)
-        return true;
+        if (head.x < 0 || head.y < 0 || head.x >= SCREEN_WIDTH || head.y >= SCREEN_HEIGHT)
+            return true;
 
-    for (size_t i = 1; i < snake.size(); i++) {
-    if ((int)round(head.x) == (int)round(snake[i].x) &&
-        (int)round(head.y) == (int)round(snake[i].y)) {
-        return true;
+        for (size_t i = 1; i < snake.size(); i++) {
+            if ((int)round(head.x) == (int)round(snake[i].x) &&
+                (int)round(head.y) == (int)round(snake[i].y)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void spawnFood() {
+    bool validPosition = false;
+    while (!validPosition) {
+        // Sinh tọa độ thức ăn theo lưới
+        food.x = rand() % (SCREEN_WIDTH / GRID_SIZE) * GRID_SIZE;
+        food.y = rand() % (SCREEN_HEIGHT / GRID_SIZE) * GRID_SIZE;
+
+        validPosition = true;
+        // Duyệt qua từng phần của rắn để kiểm tra
+        for (const auto &segment : snake) {
+            int segX = static_cast<int>(round(segment.x));
+            int segY = static_cast<int>(round(segment.y));
+            if (segX == static_cast<int>(food.x) && segY == static_cast<int>(food.y)) {
+                validPosition = false;
+                break;
+            }
+        }
+    }
+
+    // Kiểm tra số lượng thức ăn đã ăn để xác định special food
+    if (foodEatenCount == 6) {
+        isSpecialFood = true;
+        foodEatenCount = 0; // Reset sau khi xuất hiện special food
+    } else {
+        isSpecialFood = false;
     }
 }
 
-    return false;
-}
 
 
-    void spawnFood() {
-    food.x = (rand() % (SCREEN_WIDTH / GRID_SIZE)) * GRID_SIZE;
-    food.y = (rand() % (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE;
-
-    // Chỉ đánh dấu special food cho lần tiếp theo
-    if (foodEatenCount % 6 == 0 && foodEatenCount != 0) {
-    isSpecialFood = true;
-} else {
-    isSpecialFood = false;
-}
-
-}
-
-
-     void renderCircle(SDL_Renderer *renderer, int x, int y, int r, SDL_Color color) {
+    void renderCircle(SDL_Renderer *renderer, int x, int y, int r, SDL_Color color) {
         SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
         for (int w = 0; w < r * 2; w++) {
             for (int h = 0; h < r * 2; h++) {
@@ -154,6 +171,7 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
             }
         }
     }
+
     void render(Graphics &graphics) {
         SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 0, 255);
         SDL_RenderClear(graphics.renderer);
@@ -161,10 +179,9 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
         for (size_t i = 0; i < snake.size(); i++) {
             int r = (i == 0) ? GRID_SIZE / 2 : GRID_SIZE / 2 - 2;
             renderCircle(graphics.renderer, (int)snake[i].x + GRID_SIZE / 2, (int)snake[i].y + GRID_SIZE / 2, r, {0, 255, 0, 255});
-            if (i == 0) { // Vẽ mắt cho đầu rắn
+            if (i == 0) {
                 int eyeOffsetX = (direction == DIR_LEFT) ? -5 : (direction == DIR_RIGHT) ? 5 : 0;
                 int eyeOffsetY = (direction == DIR_UP) ? -5 : (direction == DIR_DOWN) ? 5 : 0;
-
                 renderCircle(graphics.renderer, (int)snake[i].x + GRID_SIZE / 2 + eyeOffsetX,
                              (int)snake[i].y + GRID_SIZE / 2 + eyeOffsetY - 3, 3, {255, 255, 255, 255});
                 renderCircle(graphics.renderer, (int)snake[i].x + GRID_SIZE / 2 + eyeOffsetX,
@@ -172,26 +189,15 @@ Uint32 fadeStartTime = 0;  // Thời điểm bắt đầu hiệu ứng mờ dầ
             }
         }
 
-        SDL_Color foodColor;
-        if (isSpecialFood) {
-            foodColor = {255, 165, 0, foodAlpha};  // Màu cam
-        } else {
-            foodColor = {255, 0, 0, foodAlpha};    // Màu đỏ
-        }
+        SDL_Color foodColor = isSpecialFood ? SDL_Color{255, 165, 0, foodAlpha} : SDL_Color{255, 0, 0, foodAlpha};
         int foodSize = isSpecialFood ? GRID_SIZE / 2 : GRID_SIZE / 3;
         renderCircle(graphics.renderer, food.x + GRID_SIZE / 2, food.y + GRID_SIZE / 2, foodSize, foodColor);
-
-
-
-
-
 
         SDL_RenderPresent(graphics.renderer);
     }
 };
 
-
-int main(int argc, char * argv[]) {
+int main(int argc, char *argv[]) {
     Graphics graphics;
     graphics.init();
 
@@ -200,14 +206,17 @@ int main(int argc, char * argv[]) {
     while (snakeGame.isRunning) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) snakeGame.isRunning = false;
+            if (e.type == SDL_QUIT)
+                snakeGame.isRunning = false;
             snakeGame.handleInput(e);
         }
 
-        snakeGame.update();
+        snakeGame.update(graphics);
         snakeGame.render(graphics);
 
         SDL_Delay(16);
     }
+
+    graphics.quit();
     return 0;
 }

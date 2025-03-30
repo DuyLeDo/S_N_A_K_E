@@ -13,4 +13,3 @@ const int DIR_RIGHT = 3;
 #define FOOD_IMG  "img\\Hear_t.png"
 #define BACKGROUND_IMG "img\\backgroundimages(2).jpg"
 #endif
-
