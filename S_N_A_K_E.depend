@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1743347205 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
+1743476757 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
 	<SDL.h>
 	<vector>
 	<cmath>
@@ -13,7 +13,7 @@
 	<SDL_mixer.h>
 	"defs.h"
 
-1743263398 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+1743475205 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
 
 1743264207 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\logic.h
 	<iostream>
