@@ -33,6 +33,7 @@
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="defs.h" />
+		<Unit filename="gameover.h" />
 		<Unit filename="graphics.h" />
 		<Unit filename="logic.h" />
 		<Unit filename="main.cpp" />
