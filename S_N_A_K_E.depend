@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1744465906 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
+1745199949 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
 	<SDL.h>
 	<vector>
 	<deque>
@@ -8,14 +8,16 @@
 	"defs.h"
 	"logic.h"
 	"gameover.h"
+	<SDL_ttf.h>
 
-1744464122 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
+1745198089 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
+	<SDL_ttf.h>
 	<SDL.h>
 	<SDL_image.h>
 	<SDL_mixer.h>
 	"defs.h"
 
-1743475205 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+1745052257 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
 
 1743264207 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\logic.h
 	<iostream>
@@ -28,4 +30,8 @@
 	"defs.h"
 
 1744464122 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\gameover.h
+
+1744561496 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\moreeffective.h
+	<unordered_set>
+	<functional>
 

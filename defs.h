@@ -2,9 +2,9 @@
 #define _DEFS__H
 
 
-const int SCREEN_WIDTH = 600;
-const int SCREEN_HEIGHT = 600;
-const int GRID_SIZE = 20;
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 600
+#define GRID_SIZE 20
 const char* WINDOW_TITLE = "JALLYDOO";
 const int DIR_UP = 0;
 const int DIR_DOWN = 1;

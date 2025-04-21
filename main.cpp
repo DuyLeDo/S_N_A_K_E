@@ -6,6 +6,7 @@
 #include "defs.h"
 #include "logic.h"
 #include "gameover.h"
+#include <SDL_ttf.h>
 using namespace std;
 
 struct SnakeSegment {
@@ -37,9 +38,12 @@ struct SnakeGame {
     bool isGameOverEffect = false;
     Uint32 gameOverStartTime = 0;
 
+    int score = 0;
+
     SnakeGame() {
         // Khởi tạo đầu rắn ở giữa màn hình
-        snake.push_back({SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f});
+        snake.push_back({SCREEN_WIDTH / 2.0f, 100 + GRID_SIZE * 3});
+
         spawnFood();
         lastUpdateTime = SDL_GetTicks();
     }
@@ -170,6 +174,7 @@ struct SnakeGame {
         int foodY = static_cast<int>(food.y);
 
         if (headX == foodX && headY == foodY) {
+            score += isSpecialFood ? 50 : 10;
             foodEatenCount++;
             if (isSpecialFood) {
                 pendingGrowth = snake.size() * 1.5;
@@ -182,7 +187,7 @@ struct SnakeGame {
     }
 
     bool checkCollision(const SnakeSegment &head) {
-        if (head.x < 0 || head.y < 0 || head.x >= SCREEN_WIDTH || head.y >= SCREEN_HEIGHT)
+        if (head.x < 0 || head.y < 100 || head.x >= SCREEN_WIDTH || head.y >= SCREEN_HEIGHT)
             return true;
 
         for (size_t i = 1; i < snake.size(); i++) {
@@ -199,7 +204,7 @@ struct SnakeGame {
         while (!validPosition) {
             // Sinh tọa độ thức ăn theo lưới
             food.x = (rand() % (SCREEN_WIDTH / GRID_SIZE)) * GRID_SIZE;
-            food.y = (rand() % (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE;
+            food.y = (rand() % ((SCREEN_HEIGHT - 100) / GRID_SIZE)) * GRID_SIZE + 100;
 
             validPosition = true;
             // Duyệt qua từng segment của rắn để kiểm tra
@@ -340,6 +345,13 @@ int main(int argc, char *argv[]) {
     SnakeGame snakeGame;
     Uint32 lastFrameTime = SDL_GetTicks();
 
+    TTF_Font* font = graphics.loadFont("assets/Purisa-BoldOblique.ttf", 20);
+    SDL_Color scorecolor = {255, 255, 0, 0};
+    SDL_Texture* scoreTex;
+
+
+
+
     while (snakeGame.isRunning) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
@@ -356,6 +368,16 @@ int main(int argc, char *argv[]) {
         background.scroll(1);
         graphics.render(background);
         snakeGame.render(graphics);
+
+        string txt= "SCORE: " + to_string(snakeGame.score);
+        scoreTex = graphics.renderText(txt.c_str(), font, scorecolor);
+
+
+        // Vẽ thanh ngang phân cách
+        SDL_SetRenderDrawColor(graphics.renderer, 255, 255, 255, 255); // màu trắng
+        SDL_Rect separator = {0, 100, SCREEN_WIDTH, 2}; // thanh cao 2px tại y=100
+        SDL_RenderFillRect(graphics.renderer, &separator);
+        graphics.renderTexture(scoreTex, 0, 0);
         SDL_RenderPresent(graphics.renderer);
 
         SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 0, 255);
@@ -363,66 +385,14 @@ int main(int argc, char *argv[]) {
         SDL_Delay(30);
     }
 
+
+
+    SDL_DestroyTexture( scoreTex );
+    scoreTex = NULL;
+    TTF_CloseFont( font );
     SDL_DestroyTexture(background.texture);
     graphics.quit();
     return 0;
 }
 
-/*
-    void renderCircle(SDL_Renderer *renderer, int x, int y, int r, SDL_Color color) {
-        SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-        for (int w = 0; w < r * 2; w++) {
-            for (int h = 0; h < r * 2; h++) {
-                int dx = r - w;
-                int dy = r - h;
-                if ((dx * dx + dy * dy) <= (r * r)) {
-                    SDL_RenderDrawPoint(renderer, x + dx, y + dy);
-                }
-            }
-        }
-    }
 
-    void render(Graphics &graphics) {
-
-
-    const int shadowOffset = 4; // Độ lệch của bóng
-    SDL_Color shadowColor = {0, 0, 0, 100}; // Màu bóng với độ trong suốt
-
-    // --- Vẽ bóng của tất cả các segment của rắn ---
-    for (size_t i = 0; i < snake.size(); i++) {
-        int r = (i == 0) ? GRID_SIZE / 2 : GRID_SIZE / 2 - 2;
-        int centerX = static_cast<int>(round(snake[i].x + GRID_SIZE / 2));
-        int centerY = static_cast<int>(round(snake[i].y + GRID_SIZE / 2));
-        renderCircle(graphics.renderer, centerX + shadowOffset, centerY + shadowOffset, r, shadowColor);
-    }
-
-    // --- Vẽ thân rắn và mắt (mà không có bóng) ---
-    for (size_t i = 0; i < snake.size(); i++) {
-        int r = (i == 0) ? GRID_SIZE / 2 : GRID_SIZE / 2 - 2;
-        int centerX = static_cast<int>(round(snake[i].x + GRID_SIZE / 2));
-        int centerY = static_cast<int>(round(snake[i].y + GRID_SIZE / 2));
-        renderCircle(graphics.renderer, centerX, centerY, r, {0, 255, 0, 255});
-
-        // Chỉ vẽ mắt cho đầu rắn mà không có bóng
-        if (i == 0) {
-            int eyeOffsetX = (direction == DIR_LEFT) ? -5 : (direction == DIR_RIGHT) ? 5 : 0;
-            int eyeOffsetY = (direction == DIR_UP) ? -5 : (direction == DIR_DOWN) ? 5 : 0;
-            renderCircle(graphics.renderer, centerX + eyeOffsetX, centerY + eyeOffsetY - 3, 3, {255, 255, 255, 255});
-            renderCircle(graphics.renderer, centerX + eyeOffsetX, centerY + eyeOffsetY + 3, 3, {255, 255, 255, 255});
-        }
-    }
-
-    // --- Vẽ thức ăn với hiệu ứng bóng ---
-    int foodSize = isSpecialFood ? GRID_SIZE / 2 : GRID_SIZE / 3;
-    int foodCenterX = static_cast<int>(round(food.x + GRID_SIZE / 2));
-    int foodCenterY = static_cast<int>(round(food.y + GRID_SIZE / 2));
-
-    // Vẽ bóng cho thức ăn
-    renderCircle(graphics.renderer, foodCenterX + shadowOffset, foodCenterY + shadowOffset, foodSize, shadowColor);
-
-    // Vẽ thức ăn thật
-    SDL_Color foodColor = isSpecialFood ? SDL_Color{255, 165, 0, foodAlpha} : SDL_Color{255, 0, 0, foodAlpha};
-    renderCircle(graphics.renderer, foodCenterX, foodCenterY, foodSize, foodColor);
-
-
-}*/
