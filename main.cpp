@@ -1,14 +1,16 @@
+#include<bits/stdc++.h>
 #include <SDL.h>
+#include <SDL_ttf.h>
+
 #include <vector>
 #include <deque>               // Bao gồm deque
 #include <cmath>
 #include "graphics.h"
 #include "defs.h"
 #include "logic.h"
-#include "gameover.h"
-#include <SDL_ttf.h>
-using namespace std;
 
+
+using namespace std;
 struct SnakeSegment {
     float x, y;
 };
@@ -333,7 +335,75 @@ struct SnakeGame {
         SDL_Color foodColor = isSpecialFood ? SDL_Color{255, 165, 0, foodAlpha} : SDL_Color{255, 0, 0, foodAlpha};
         renderSquare(graphics.renderer, foodCenterX, foodCenterY, foodHalfSize, foodColor);
     }
+
+    void reset() {
+    // Khởi lại trạng thái chạy
+    isRunning         = true;
+    isGameOverEffect  = false;
+    gameOverStartTime = 0;
+
+    // Reset hướng đi
+    direction     = DIR_RIGHT;
+    nextDirection = DIR_RIGHT;
+
+    // Xóa rắn và đặt đoạn đầu tại giữa màn
+    snake.clear();
+    snake.push_back({ SCREEN_WIDTH / 2.0f, 100 + GRID_SIZE * 3 });
+
+    // Reset thức ăn
+    foodEatenCount   = 0;
+    isSpecialFood    = false;
+    pendingGrowth    = 0;
+    foodAlpha        = 255;
+    isFading         = false;
+    fadeStartTime    = 0;
+    spawnFood();
+
+    // Reset boost
+    isBoosting   = false;
+    boostTimer   = 0.0f;
+
+    // Xóa mảnh vụn
+    fragments.clear();
+
+    // Reset thời gian cập nhật
+    lastUpdateTime = SDL_GetTicks();
+
+    // Reset điểm
+    score = 0;
+}
+
 };
+        void renderStartScreen(Graphics &graphics, TTF_Font* font) {
+            SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 128, 255);
+            SDL_RenderClear(graphics.renderer);
+            SDL_Texture* title = graphics.renderText("SNAKE GAME", font, { 255, 255, 0, 255 });
+            SDL_Texture* prompt = graphics.renderText("Press ENTER to Start", font, { 255, 255, 255, 255 });
+            graphics.renderTexture(title,
+                (SCREEN_WIDTH  /*width(title)*/)/2, SCREEN_HEIGHT/3);
+            graphics.renderTexture(prompt,
+                (SCREEN_WIDTH  /*width(prompt)*/)/2, SCREEN_HEIGHT/2);
+            SDL_DestroyTexture(title);
+            SDL_DestroyTexture(prompt);
+        }
+
+        void renderGameOverScreen(Graphics &graphics, TTF_Font* font, int score) {
+            SDL_SetRenderDrawColor(graphics.renderer, 128, 0, 0, 255);
+            SDL_RenderClear(graphics.renderer);
+            SDL_Texture* go = graphics.renderText("GAME OVER", font, { 255, 255, 255, 255 });
+            SDL_Texture* scr = graphics.renderText(("Score: " + to_string(score)).c_str(), font, { 255, 255, 0, 255 });
+            SDL_Texture* prompt = graphics.renderText("Press ENTER to Restart", font, { 255, 255, 255, 255 });
+            // Vẽ lần lượt tại tâm màn hình
+            graphics.renderTexture(go, (SCREEN_WIDTH  /*w(go)*/)/2, SCREEN_HEIGHT/3);
+            graphics.renderTexture(scr, (SCREEN_WIDTH  /*w(scr)*/)/2, SCREEN_HEIGHT/2);
+            graphics.renderTexture(prompt, (SCREEN_WIDTH  /*w(prompt)*/)/2, SCREEN_HEIGHT*2/3);
+            SDL_DestroyTexture(go);
+            SDL_DestroyTexture(scr);
+            SDL_DestroyTexture(prompt);
+        }
+
+
+GameState currentState = STATE_START;
 
 int main(int argc, char *argv[]) {
     Graphics graphics;
@@ -355,22 +425,47 @@ int main(int argc, char *argv[]) {
     while (snakeGame.isRunning) {
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT)
-                snakeGame.isRunning = false;
+            if (e.type == SDL_QUIT) {snakeGame.isRunning = false;}
+            else if (currentState == STATE_START) {
+            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+                currentState = STATE_PLAYING;
+                snakeGame.reset();     // reset toàn bộ game
+            }
+        }
+
+         else if (currentState == STATE_PLAYING) {
             snakeGame.handleInput(e);
         }
+         else if (currentState == STATE_GAMEOVER) {
+            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+                currentState = STATE_START;
+            }
+        }
+    }
 
         Uint32 currentFrameTime = SDL_GetTicks();
         float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
         lastFrameTime = currentFrameTime;
 
+        if (currentState == STATE_PLAYING) {
         snakeGame.update(graphics, deltaTime);
-        background.scroll(1);
-        graphics.render(background);
-        snakeGame.render(graphics);
+        if (!snakeGame.isRunning) {
+            currentState = STATE_GAMEOVER;
+        }
+    }
+
+            SDL_RenderClear(graphics.renderer);
+        if (currentState == STATE_START) {
+            renderStartScreen(graphics, font);
+        }
+        else if (currentState == STATE_PLAYING) {
+            background.scroll(1);
+            graphics.render(background);
+            snakeGame.render(graphics);
 
         string txt= "SCORE: " + to_string(snakeGame.score);
         scoreTex = graphics.renderText(txt.c_str(), font, scorecolor);
+
 
 
         // Vẽ thanh ngang phân cách
@@ -378,6 +473,22 @@ int main(int argc, char *argv[]) {
         SDL_Rect separator = {0, 100, SCREEN_WIDTH, 2}; // thanh cao 2px tại y=100
         SDL_RenderFillRect(graphics.renderer, &separator);
         graphics.renderTexture(scoreTex, 0, 0);
+
+        if (snakeGame.isBoosting) {
+        float remainingTime = snakeGame.boostTimer;
+        string boostTxt = "BOOST: " + to_string(round(remainingTime * 10) / 10.0f) + "s";
+        SDL_Texture* boostTex = graphics.renderText(boostTxt.c_str(), font, {255, 100, 100, 255});  // Màu đỏ nhạt
+
+        int textW, textH;
+        SDL_QueryTexture(boostTex, NULL, NULL, &textW, &textH);
+        graphics.renderTexture(boostTex, SCREEN_WIDTH - textW - 10, 0); // Góc trên bên phải
+        SDL_DestroyTexture(boostTex); // Giải phóng sau khi dùng
+    }
+        }
+        else if (currentState == STATE_GAMEOVER) {
+        renderGameOverScreen(graphics, font, snakeGame.score);
+    }
+
         SDL_RenderPresent(graphics.renderer);
 
         SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 0, 255);
@@ -394,5 +505,4 @@ int main(int argc, char *argv[]) {
     graphics.quit();
     return 0;
 }
-
 

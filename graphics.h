@@ -5,6 +5,8 @@
 #include <SDL_image.h>
 #include <SDL_mixer.h>
 #include "defs.h"
+#include<string>
+using namespace std;
 
 struct ScrollingBackground {
     SDL_Texture* texture;
@@ -235,6 +237,13 @@ struct Graphics {
         SDL_FreeSurface( textSurface );
         return texture;
     }
+
+
+
+
+
+
+
 
 
 };

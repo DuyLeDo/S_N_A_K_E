@@ -12,4 +12,11 @@ const int DIR_LEFT = 2;
 const int DIR_RIGHT = 3;
 #define FOOD_IMG  "img\\Hear_t.png"
 #define BACKGROUND_IMG "img\\backgroundimages(2).jpg"
+
+enum GameState {
+    STATE_START,
+    STATE_PLAYING,
+    STATE_GAMEOVER
+};
+
 #endif
