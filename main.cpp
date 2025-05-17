@@ -8,7 +8,7 @@
 #include "graphics.h"
 #include "defs.h"
 #include "logic.h"
-
+#include "highscore.h"
 
 using namespace std;
 struct SnakeSegment {
@@ -32,8 +32,8 @@ struct SnakeGame {
 
     bool isBoosting = false;
     float boostTimer = 0.0f;
-    const float boostDuration = 30.0f; // 3 giây tăng tốc
-    const float boostSpeed = 130.0f;   // tốc độ tăng tốc
+    const float boostDuration = 15.0f; // 3 giây tăng tốc
+    const float boostSpeed = 200.0f;   // tốc độ tăng tốc
     float normalSpeed = 100.0f;        // tốc độ di chuyển bình thường
 
     vector<SnakeFragment> fragments;
@@ -100,70 +100,77 @@ struct SnakeGame {
             }
         }
 
-        // Cập nhật trạng thái tăng tốc
-        if (isBoosting) {
-            boostTimer -= deltaTime;
-            if (boostTimer <= 0.0f) {
-                isBoosting = false;
-                boostTimer = 0.0f;
-            }
+         // 1) tính t1, t2
+    float t1 = 0.0f, t2 = 0.0f;
+    if (isBoosting) {
+        // phần thời gian còn boost
+        t1 = min(deltaTime, boostTimer);
+        boostTimer -= t1;
+        if (boostTimer <= 0.0f) {
+            isBoosting = false;
+            boostTimer = 0.0f;
         }
-
-        // Tính tốc độ hiện tại và quãng đường cần di chuyển
-        float currentSpeed = isBoosting ? boostSpeed : normalSpeed;
-        float moveDistance = currentSpeed * deltaTime; // Tổng quãng đường cần di chuyển
-        float stepSize = GRID_SIZE; // Mỗi bước di chuyển bằng kích thước của ô lưới
-
-        SnakeSegment &head = snake.front();
-        SnakeSegment newHead = head;
-
-        // Chia nhỏ quãng đường thành các bước
-        const int MAX_STEPS_PER_FRAME = 5;
-        int steps = 0;
-        while (moveDistance > 0 && steps < MAX_STEPS_PER_FRAME) {
-            float step = min(moveDistance, stepSize); // Lấy bước nhỏ nhất
-
-            // Cập nhật hướng nếu đầu gần khớp lưới
-            if (fabs(fmod(newHead.x, GRID_SIZE)) < step &&
-                fabs(fmod(newHead.y, GRID_SIZE)) < step) {
-                direction = nextDirection;
-            }
-
-            // Di chuyển theo hướng
-            switch (direction) {
-                case DIR_UP:    newHead.y -= step; break;
-                case DIR_DOWN:  newHead.y += step; break;
-                case DIR_LEFT:  newHead.x -= step; break;
-                case DIR_RIGHT: newHead.x += step; break;
-            }
-
-            // Kiểm tra va chạm sau mỗi bước
-            if (checkCollision(newHead)) {
-                graphics.playSound(graphics.gameOverSound);
-                // Gọi hiệu ứng nổ
-                triggerGameOverEffect(graphics);
-                return;
-            }
-
-            // Thêm phần tử mới vào đầu rắn sử dụng deque (push_front nhanh)
-            snake.push_front(newHead);
-
-            // Kiểm tra ăn thức ăn chỉ ở bước cuối cùng
-            if (moveDistance <= stepSize && checkFoodCollision(newHead)) {
-                graphics.playSound(graphics.eatSound);
-                if (isSpecialFood) {
-                    pendingGrowth = snake.size() * 2; // Tăng trưởng lớn hơn cho thức ăn đặc biệt
-                } else {
-                    pendingGrowth += 1; // Tăng trưởng bình thường
-                }
-            } else {
-                updateGrowth(deltaTime / (moveDistance / step), currentSpeed); // Điều chỉnh deltaTime cho từng bước
-            }
-
-            moveDistance -= step;
-            steps++;
-        }
+        // phần dư (nếu boost kết thúc giữa chừng)
+        t2 = deltaTime - t1;
+    } else {
+        // không boost: toàn bộ deltaTime là t2
+        t2 = deltaTime;
     }
+
+    // 2) di chuyển + growth cho t1 ở tốc độ boost
+    if (t1 > 0.0f) {
+        stepMovementAndGrowth(graphics, t1, boostSpeed);
+    }
+    // 3) di chuyển + growth cho t2 ở tốc độ bình thường
+    if (t2 > 0.0f) {
+        stepMovementAndGrowth(graphics, t2, normalSpeed);
+    }
+    }
+    void stepMovementAndGrowth(Graphics &graphics, float dt, float speed) {
+    float moveDist = speed * dt;
+    float stepSize = GRID_SIZE;
+    SnakeSegment head = snake.front();
+    SnakeSegment newHead = head;
+    int steps = 0;
+    const int MAX_STEPS = 5;
+    while (moveDist > 0.0f && steps < MAX_STEPS) {
+        float step = min(moveDist, stepSize);
+
+        // cập nhật direction khi head gần lưới
+        if (nextDirection != (direction ^ 1)) {
+           // chỉ đổi nếu không quay ngược trực tiếp
+           direction = nextDirection;
+       }
+        // di chuyển
+        switch (direction) {
+            case DIR_UP:    newHead.y -= step; break;
+            case DIR_DOWN:  newHead.y += step; break;
+            case DIR_LEFT:  newHead.x -= step; break;
+            case DIR_RIGHT: newHead.x += step; break;
+        }
+
+        // va chạm?
+        if (checkCollision(newHead)) {
+            graphics.playSound(graphics.gameOverSound);
+            triggerGameOverEffect(graphics);
+            return;
+        }
+
+        snake.push_front(newHead);
+
+        // ăn food?
+        if (moveDist <= stepSize && checkFoodCollision(newHead)) {
+            graphics.playSound(graphics.eatSound);
+            // pendingGrowth đã được set trong checkFoodCollision
+        } else {
+            // normal tail update
+            updateGrowth(dt * (step / (speed * dt)), speed);
+        }
+
+        moveDist -= step;
+        steps++;
+    }
+}
 
     // Sửa hàm checkFoodCollision: sử dụng làm tròn tọa độ để so sánh
     bool checkFoodCollision(const SnakeSegment &head) {
@@ -374,33 +381,100 @@ struct SnakeGame {
 }
 
 };
-        void renderStartScreen(Graphics &graphics, TTF_Font* font) {
-            SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 128, 255);
-            SDL_RenderClear(graphics.renderer);
-            SDL_Texture* title = graphics.renderText("SNAKE GAME", font, { 255, 255, 0, 255 });
-            SDL_Texture* prompt = graphics.renderText("Press ENTER to Start", font, { 255, 255, 255, 255 });
-            graphics.renderTexture(title,
-                (SCREEN_WIDTH  /*width(title)*/)/2, SCREEN_HEIGHT/3);
-            graphics.renderTexture(prompt,
-                (SCREEN_WIDTH  /*width(prompt)*/)/2, SCREEN_HEIGHT/2);
-            SDL_DestroyTexture(title);
-            SDL_DestroyTexture(prompt);
-        }
+        void renderStartScreen(Graphics &graphics, TTF_Font* font, SDL_Rect &startButtonRect) {
+    static SDL_Texture* bg = nullptr;
+    if (!bg) bg = graphics.loadTexture(START_JPG);
+    SDL_RenderCopy(graphics.renderer, bg, nullptr, nullptr);
 
-        void renderGameOverScreen(Graphics &graphics, TTF_Font* font, int score) {
-            SDL_SetRenderDrawColor(graphics.renderer, 128, 0, 0, 255);
-            SDL_RenderClear(graphics.renderer);
-            SDL_Texture* go = graphics.renderText("GAME OVER", font, { 255, 255, 255, 255 });
-            SDL_Texture* scr = graphics.renderText(("Score: " + to_string(score)).c_str(), font, { 255, 255, 0, 255 });
-            SDL_Texture* prompt = graphics.renderText("Press ENTER to Restart", font, { 255, 255, 255, 255 });
-            // Vẽ lần lượt tại tâm màn hình
-            graphics.renderTexture(go, (SCREEN_WIDTH  /*w(go)*/)/2, SCREEN_HEIGHT/3);
-            graphics.renderTexture(scr, (SCREEN_WIDTH  /*w(scr)*/)/2, SCREEN_HEIGHT/2);
-            graphics.renderTexture(prompt, (SCREEN_WIDTH  /*w(prompt)*/)/2, SCREEN_HEIGHT*2/3);
-            SDL_DestroyTexture(go);
-            SDL_DestroyTexture(scr);
-            SDL_DestroyTexture(prompt);
-        }
+    SDL_Texture* title  = graphics.renderText("SNAKE GAME", font, {128, 0, 255, 255});
+    SDL_Texture* prompt = graphics.renderText("Click to Start", font, {0, 128, 255, 255});
+
+    int w, h;
+    SDL_QueryTexture(title, nullptr, nullptr, &w, &h);
+    graphics.renderTexture(title, (SCREEN_WIDTH - w) / 2, SCREEN_HEIGHT / 10);
+
+    SDL_QueryTexture(prompt, nullptr, nullptr, &w, &h);
+    int promptX = (SCREEN_WIDTH - w) / 2;
+    int promptY = SCREEN_HEIGHT / 2;
+    graphics.renderTexture(prompt, promptX, promptY);
+
+    // Set vùng click của nút Start
+    startButtonRect = {promptX, promptY, w, h};
+
+    SDL_DestroyTexture(title);
+    SDL_DestroyTexture(prompt);
+}
+
+
+
+void renderPauseScreen(Graphics &graphics, TTF_Font* font) {
+    static SDL_Texture* bg = nullptr;
+    if (!bg) bg = graphics.loadTexture(PAUSE_JPG);
+    SDL_RenderCopy(graphics.renderer, bg, nullptr, nullptr);
+
+    SDL_Texture* pausedText = graphics.renderText("PAUSED", font, {255, 255, 255, 255});
+    SDL_Texture* resumeText = graphics.renderText("Press P to Resume", font, {255, 255, 0, 255});
+
+
+    int w, h;
+    SDL_QueryTexture(pausedText, NULL, NULL, &w, &h);
+    graphics.renderTexture(pausedText, (SCREEN_WIDTH - w) / 2, SCREEN_HEIGHT / 3);
+
+    SDL_QueryTexture(resumeText, NULL, NULL, &w, &h);
+    graphics.renderTexture(resumeText, (SCREEN_WIDTH - w) / 2, SCREEN_HEIGHT / 2);
+
+    SDL_DestroyTexture(pausedText);
+    SDL_DestroyTexture(resumeText);
+}
+void renderGameOverScreen(Graphics &graphics, TTF_Font* font, int score, int highscore, SDL_Rect &restartButtonRect, SDL_Rect &backButtonRect) {
+    static SDL_Texture* bg = nullptr;
+    if (!bg) bg = graphics.loadTexture(GAMEOVER_JPG);
+    SDL_RenderCopy(graphics.renderer, bg, nullptr, nullptr);
+
+    SDL_Texture* go     = graphics.renderText("GAME OVER", font, {0, 0, 0, 255});
+    SDL_Texture* scrTex = graphics.renderText(("Score: " + to_string(score)).c_str(), font, {0, 0, 0, 255});
+    SDL_Texture* highscoreTex = graphics.renderText(("Highscore: " + to_string(highscore)).c_str(), font, {0, 0, 0, 255});
+    SDL_Texture* restart = graphics.renderText("Click to Restart", font, {0, 0, 0, 255});
+    SDL_Texture* back    = graphics.renderText("Click to Main Menu", font, {0, 0, 0, 255});
+
+    int w, h;
+    int y = 30;
+
+    SDL_QueryTexture(go, NULL, NULL, &w, &h);
+    graphics.renderTexture(go, (SCREEN_WIDTH - w) / 2-20, y);
+    y += h + 10;
+
+    SDL_QueryTexture(scrTex, NULL, NULL, &w, &h);
+    graphics.renderTexture(scrTex, (SCREEN_WIDTH - w) / 2-20, y);
+    y += h + 10;
+
+    SDL_QueryTexture(highscoreTex, NULL, NULL, &w, &h);
+    graphics.renderTexture(highscoreTex, (SCREEN_WIDTH - w) / 2-20, y);
+
+    // Tính lại vị trí 2 nút dưới cùng
+    int restartW, restartH, backW, backH;
+    SDL_QueryTexture(restart, NULL, NULL, &restartW, &restartH);
+    SDL_QueryTexture(back, NULL, NULL, &backW, &backH);
+
+    int restartX = (SCREEN_WIDTH - restartW-20) / 2;
+    int restartY = SCREEN_HEIGHT - restartH - backH - 40;
+
+    int backX = (SCREEN_WIDTH - backW-20) / 2;
+    int backY = restartY + restartH + 20;
+
+    graphics.renderTexture(restart, restartX, restartY);
+    graphics.renderTexture(back, backX, backY);
+
+    restartButtonRect = {restartX, restartY, restartW, restartH};
+    backButtonRect = {backX, backY, backW, backH};
+
+    SDL_DestroyTexture(go);
+    SDL_DestroyTexture(scrTex);
+    SDL_DestroyTexture(highscoreTex);
+    SDL_DestroyTexture(restart);
+    SDL_DestroyTexture(back);
+}
+
 
 
 GameState currentState = STATE_START;
@@ -419,90 +493,137 @@ int main(int argc, char *argv[]) {
     SDL_Color scorecolor = {255, 255, 0, 0};
     SDL_Texture* scoreTex;
 
+    // Đọc điểm cao nhất khi bắt đầu game
+    int highscore = readHighScore();
+    bool appRunning = true;
+    SDL_Rect startButtonRect, restartButtonRect, backButtonRect;
 
+while (appRunning) {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT) {
+            appRunning = false;
+        }
 
+        else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+            int mouseX = e.button.x;
+            int mouseY = e.button.y;
 
-    while (snakeGame.isRunning) {
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {snakeGame.isRunning = false;}
-            else if (currentState == STATE_START) {
-            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
-                currentState = STATE_PLAYING;
-                snakeGame.reset();     // reset toàn bộ game
+            if (currentState == STATE_START) {
+                SDL_Point p = {mouseX, mouseY};
+                if (SDL_PointInRect(&p, &startButtonRect)) {
+                    currentState = STATE_PLAYING;
+                    snakeGame.reset();
+                    lastFrameTime = SDL_GetTicks();
+                }
+            }
+            else if (currentState == STATE_GAMEOVER) {
+                SDL_Point p = {mouseX, mouseY};
+                if (SDL_PointInRect(&p, &restartButtonRect)) {
+                    snakeGame.reset();
+                    currentState = STATE_PLAYING;
+                    lastFrameTime = SDL_GetTicks();
+                } else if (SDL_PointInRect(&p, &backButtonRect)) {
+                    snakeGame.reset();
+                    currentState = STATE_START;
+                    lastFrameTime = SDL_GetTicks();
+                }
             }
         }
 
-         else if (currentState == STATE_PLAYING) {
-            snakeGame.handleInput(e);
-        }
-         else if (currentState == STATE_GAMEOVER) {
-            if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
-                currentState = STATE_START;
+        else if (currentState == STATE_PLAYING || currentState == STATE_PAUSED) {
+            if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_p:  // Pause/Resume
+                        if (currentState == STATE_PLAYING)
+                            currentState = STATE_PAUSED;
+                        else if (currentState == STATE_PAUSED)
+                            currentState = STATE_PLAYING;
+                        break;
+                    case SDLK_m:  // Toggle sound
+                        graphics.soundOn = !graphics.soundOn;
+                        break;
+                    case SDLK_n:  // Toggle music
+                        graphics.toggleMusic();
+                        break;
+                }
+            }
+
+            if (currentState == STATE_PLAYING) {
+                snakeGame.handleInput(e);
             }
         }
     }
 
-        Uint32 currentFrameTime = SDL_GetTicks();
-        float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
-        lastFrameTime = currentFrameTime;
+    Uint32 currentFrameTime = SDL_GetTicks();
+    float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
+    lastFrameTime = currentFrameTime;
 
-        if (currentState == STATE_PLAYING) {
+    // Cập nhật game khi đang chơi
+    if (currentState == STATE_PLAYING) {
         snakeGame.update(graphics, deltaTime);
-        if (!snakeGame.isRunning) {
-            currentState = STATE_GAMEOVER;
+        if (snakeGame.isGameOverEffect) {
+            if (SDL_GetTicks() - snakeGame.gameOverStartTime > 2000) {
+                currentState = STATE_GAMEOVER;
+            }
         }
     }
 
-            SDL_RenderClear(graphics.renderer);
-        if (currentState == STATE_START) {
-            renderStartScreen(graphics, font);
-        }
-        else if (currentState == STATE_PLAYING) {
-            background.scroll(1);
-            graphics.render(background);
-            snakeGame.render(graphics);
+    // Render
+    SDL_RenderClear(graphics.renderer);
 
-        string txt= "SCORE: " + to_string(snakeGame.score);
+    if (currentState == STATE_START) {
+        renderStartScreen(graphics, font, startButtonRect);
+    }
+
+    else if (currentState == STATE_PLAYING) {
+        background.scroll(1);
+        graphics.render(background);
+        snakeGame.render(graphics);
+
+        string txt = "SCORE: " + to_string(snakeGame.score);
         scoreTex = graphics.renderText(txt.c_str(), font, scorecolor);
 
-
-
-        // Vẽ thanh ngang phân cách
-        SDL_SetRenderDrawColor(graphics.renderer, 255, 255, 255, 255); // màu trắng
-        SDL_Rect separator = {0, 100, SCREEN_WIDTH, 2}; // thanh cao 2px tại y=100
+        SDL_SetRenderDrawColor(graphics.renderer, 255, 255, 255, 255);
+        SDL_Rect separator = {0, 100, SCREEN_WIDTH, 2};
         SDL_RenderFillRect(graphics.renderer, &separator);
         graphics.renderTexture(scoreTex, 0, 0);
 
         if (snakeGame.isBoosting) {
-        float remainingTime = snakeGame.boostTimer;
-        string boostTxt = "BOOST: " + to_string(round(remainingTime * 10) / 10.0f) + "s";
-        SDL_Texture* boostTex = graphics.renderText(boostTxt.c_str(), font, {255, 100, 100, 255});  // Màu đỏ nhạt
-
-        int textW, textH;
-        SDL_QueryTexture(boostTex, NULL, NULL, &textW, &textH);
-        graphics.renderTexture(boostTex, SCREEN_WIDTH - textW - 10, 0); // Góc trên bên phải
-        SDL_DestroyTexture(boostTex); // Giải phóng sau khi dùng
-    }
+            float remainingTime = snakeGame.boostTimer;
+            string boostTxt = "BOOST: " + to_string(round(remainingTime * 10) / 10.0f) + "s";
+            SDL_Texture* boostTex = graphics.renderText(boostTxt.c_str(), font, {255, 100, 100, 255});
+            int textW, textH;
+            SDL_QueryTexture(boostTex, NULL, NULL, &textW, &textH);
+            graphics.renderTexture(boostTex, SCREEN_WIDTH - textW - 10, 0);
+            SDL_DestroyTexture(boostTex);
         }
-        else if (currentState == STATE_GAMEOVER) {
-        renderGameOverScreen(graphics, font, snakeGame.score);
     }
 
-        SDL_RenderPresent(graphics.renderer);
+    else if (currentState == STATE_PAUSED) {
 
-        SDL_SetRenderDrawColor(graphics.renderer, 0, 0, 0, 255);
-        SDL_RenderClear(graphics.renderer);
-        SDL_Delay(30);
+    renderPauseScreen(graphics, font);
+
+
     }
 
+    else if (currentState == STATE_GAMEOVER) {
+        if (snakeGame.score > highscore) {
+            highscore = snakeGame.score;
+            writeHighScore(highscore);
+        }
+        renderGameOverScreen(graphics, font, snakeGame.score, highscore, restartButtonRect, backButtonRect);
+    }
 
-
-    SDL_DestroyTexture( scoreTex );
-    scoreTex = NULL;
-    TTF_CloseFont( font );
-    SDL_DestroyTexture(background.texture);
-    graphics.quit();
-    return 0;
+    SDL_RenderPresent(graphics.renderer);
+    SDL_Delay(30);
 }
 
+SDL_DestroyTexture(scoreTex);
+scoreTex = NULL;
+TTF_CloseFont(font);
+SDL_DestroyTexture(background.texture);
+graphics.quit();
+return 0;
+
+}

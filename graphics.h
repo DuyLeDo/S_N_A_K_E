@@ -31,6 +31,8 @@ struct Graphics {
     SDL_Window *window;
 
     // Tài nguyên âm thanh
+    bool musicOn = true;   // Dùng để bật/tắt nhạc nền
+    bool soundOn = true;
     Mix_Music *backgroundMusic = nullptr;
     Mix_Chunk *eatSound = nullptr;
     Mix_Chunk *gameOverSound = nullptr;
@@ -123,14 +125,24 @@ struct Graphics {
         return gMusic;
     }
 
-    void playMusic(Mix_Music *gMusic) {
-        if (gMusic == nullptr) return;
-        if (Mix_PlayingMusic() == 0) {
-            Mix_PlayMusic(gMusic, -1); // Lặp vô hạn
-        } else if (Mix_PausedMusic() == 1) {
-            Mix_ResumeMusic();
-        }
+   void playMusic(Mix_Music *gMusic) {
+    if (!musicOn || gMusic == nullptr) return;
+    if (Mix_PlayingMusic() == 0) {
+        Mix_PlayMusic(gMusic, -1); // Lặp vô hạn
+    } else if (Mix_PausedMusic() == 1) {
+        Mix_ResumeMusic();
     }
+}
+void toggleMusic() {
+    musicOn = !musicOn;
+    if (musicOn) {
+        playMusic(backgroundMusic);
+    } else {
+        Mix_PauseMusic();
+    }
+}
+
+
 
     // Hàm load và phát hiệu ứng âm thanh
     Mix_Chunk *loadSound(const char* path) {
@@ -142,11 +154,15 @@ struct Graphics {
         return gSound;
     }
 
-    void playSound(Mix_Chunk *gSound) {
-        if (gSound != nullptr) {
-            Mix_PlayChannel(-1, gSound, 0); // Phát trên kênh tự do, không lặp
-        }
+
+
+    void playSound(Mix_Chunk* sound) {
+
+    if (soundOn && sound != nullptr) {
+        Mix_PlayChannel(-1, sound, 0);
     }
+}
+
 
     // Hàm load và render texture
     SDL_Texture *loadTexture(const char *filename) {

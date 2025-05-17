@@ -2,39 +2,67 @@
 <CodeBlocks_layout_file>
 	<FileVersion major="1" minor="0" />
 	<ActiveTarget name="Debug" />
+	<File name="startgame.h" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="46" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="highscore.txt" open="1" top="0" tabpos="9" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="1" topLine="0" />
+		</Cursor>
+	</File>
+	<File name="defs.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="524" topLine="4" />
+		</Cursor>
+	</File>
+	<File name="highscore.h" open="1" top="0" tabpos="8" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+		<Cursor>
+			<Cursor1 position="564" topLine="13" />
+		</Cursor>
+	</File>
 	<File name="logic.h" open="1" top="0" tabpos="4" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="142" topLine="2" />
 		</Cursor>
 	</File>
-	<File name="graphics.h" open="1" top="1" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="main.cpp" open="1" top="1" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="7212" topLine="230" />
+			<Cursor1 position="22469" topLine="339" />
 		</Cursor>
+		<Folding>
+			<Collapse line="13" />
+			<Collapse line="52" />
+			<Collapse line="78" />
+			<Collapse line="175" />
+			<Collapse line="197" />
+			<Collapse line="210" />
+			<Collapse line="238" />
+			<Collapse line="251" />
+			<Collapse line="271" />
+			<Collapse line="281" />
+			<Collapse line="294" />
+			<Collapse line="304" />
+			<Collapse line="345" />
+			<Collapse line="602" />
+			<Collapse line="609" />
+			<Collapse line="610" />
+		</Folding>
 	</File>
 	<File name="moreeffective.h" open="1" top="0" tabpos="6" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="78" topLine="6" />
+			<Cursor1 position="471" topLine="3" />
 		</Cursor>
 	</File>
-	<File name="main.cpp" open="1" top="0" tabpos="1" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
+	<File name="graphics.h" open="1" top="0" tabpos="2" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
-			<Cursor1 position="15279" topLine="487" />
-		</Cursor>
-	</File>
-	<File name="startgame.h" open="1" top="0" tabpos="7" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="79" topLine="0" />
+			<Cursor1 position="219" topLine="6" />
 		</Cursor>
 	</File>
 	<File name="gameover.h" open="1" top="0" tabpos="5" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
 		<Cursor>
 			<Cursor1 position="182" topLine="0" />
-		</Cursor>
-	</File>
-	<File name="defs.h" open="1" top="0" tabpos="3" split="0" active="1" splitpos="0" zoom_1="0" zoom_2="0">
-		<Cursor>
-			<Cursor1 position="494" topLine="1" />
 		</Cursor>
 	</File>
 </CodeBlocks_layout_file>

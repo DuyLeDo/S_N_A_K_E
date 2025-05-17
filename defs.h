@@ -12,11 +12,15 @@ const int DIR_LEFT = 2;
 const int DIR_RIGHT = 3;
 #define FOOD_IMG  "img\\Hear_t.png"
 #define BACKGROUND_IMG "img\\backgroundimages(2).jpg"
-
+#define START_JPG "img\\snakestart.jpg"
+#define GAMEOVER_JPG "img\\snakecry.jpg"
+#define PAUSE_JPG "img\\snakepause.jpg"
 enum GameState {
     STATE_START,
     STATE_PLAYING,
-    STATE_GAMEOVER
+    STATE_GAMEOVER,
+    STATE_PAUSED
 };
+
 
 #endif

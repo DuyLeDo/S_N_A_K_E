@@ -35,6 +35,8 @@
 		<Unit filename="defs.h" />
 		<Unit filename="gameover.h" />
 		<Unit filename="graphics.h" />
+		<Unit filename="highscore.h" />
+		<Unit filename="highscore.txt" />
 		<Unit filename="logic.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="moreeffective.h" />
