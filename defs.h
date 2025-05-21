@@ -15,11 +15,13 @@ const int DIR_RIGHT = 3;
 #define START_JPG "img\\snakestart.jpg"
 #define GAMEOVER_JPG "img\\snakecry.jpg"
 #define PAUSE_JPG "img\\snakepause.jpg"
+#define INSTRUCTION_JPG "img\\instruction.jpg"
 enum GameState {
     STATE_START,
     STATE_PLAYING,
     STATE_GAMEOVER,
-    STATE_PAUSED
+    STATE_PAUSED,
+    STATE_INSTRUCTIONS
 };
 
 

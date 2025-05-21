@@ -9,7 +9,7 @@
 #include "defs.h"
 #include "logic.h"
 #include "highscore.h"
-
+#include "setting.h"
 using namespace std;
 struct SnakeSegment {
     float x, y;
@@ -41,6 +41,9 @@ struct SnakeGame {
     Uint32 gameOverStartTime = 0;
 
     int score = 0;
+
+    vector<FloatingScore> floatingScores;
+
 
     SnakeGame() {
         // Khởi tạo đầu rắn ở giữa màn hình
@@ -125,7 +128,25 @@ struct SnakeGame {
     if (t2 > 0.0f) {
         stepMovementAndGrowth(graphics, t2, normalSpeed);
     }
+    updateFloatingScores(deltaTime);
+
     }
+
+    void updateFloatingScores(float deltaTime) {
+    auto now = SDL_GetTicks();
+    for (auto& fs : floatingScores) {
+        fs.y -= 30.0f * deltaTime; // hiệu ứng nổi lên
+        fs.alpha = 255 - (now - fs.startTime) / 1000.0f * 255; // mờ dần
+    }
+
+    // Xóa các điểm đã mờ hết
+    floatingScores.erase(std::remove_if(floatingScores.begin(), floatingScores.end(),
+        [](const FloatingScore& fs) {
+            return fs.alpha <= 0;
+        }), floatingScores.end());
+}
+
+
     void stepMovementAndGrowth(Graphics &graphics, float dt, float speed) {
     float moveDist = speed * dt;
     float stepSize = GRID_SIZE;
@@ -184,6 +205,14 @@ struct SnakeGame {
 
         if (headX == foodX && headY == foodY) {
             score += isSpecialFood ? 50 : 10;
+            // Tạo hiệu ứng điểm nổi tại đầu rắn
+            FloatingScore fs;
+            fs.x = head.x + GRID_SIZE / 2;
+            fs.y = head.y + GRID_SIZE / 2;
+            fs.value = isSpecialFood ? 50 : 10;
+            fs.startTime = SDL_GetTicks();
+            floatingScores.push_back(fs);
+
             foodEatenCount++;
             if (isSpecialFood) {
                 pendingGrowth = snake.size() * 1.5;
@@ -341,6 +370,19 @@ struct SnakeGame {
         renderSquare(graphics.renderer, foodCenterX + shadowOffset, foodCenterY + shadowOffset, foodHalfSize, shadowColor);
         SDL_Color foodColor = isSpecialFood ? SDL_Color{255, 165, 0, foodAlpha} : SDL_Color{255, 0, 0, foodAlpha};
         renderSquare(graphics.renderer, foodCenterX, foodCenterY, foodHalfSize, foodColor);
+
+
+        for (const auto& fs : floatingScores) {
+        SDL_Color color = {255, 255, 0, (Uint8)fs.alpha};  // Màu vàng nhạt
+        string text = "+" + to_string(fs.value);
+        TTF_Font* font = graphics.loadFont("assets/Purisa-BoldOblique.ttf", 20);
+        SDL_Texture* tex = graphics.renderText(text.c_str(), font, color);
+        int w, h;
+        SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
+        graphics.renderTexture(tex, static_cast<int>(fs.x - w / 2), static_cast<int>(fs.y - h / 2));
+        SDL_DestroyTexture(tex);
+}
+
     }
 
     void reset() {
@@ -381,7 +423,7 @@ struct SnakeGame {
 }
 
 };
-        void renderStartScreen(Graphics &graphics, TTF_Font* font, SDL_Rect &startButtonRect) {
+        void renderStartScreen(Graphics &graphics, TTF_Font* font, SDL_Rect &startButtonRect,SDL_Rect& instructionsButtonRect) {
     static SDL_Texture* bg = nullptr;
     if (!bg) bg = graphics.loadTexture(START_JPG);
     SDL_RenderCopy(graphics.renderer, bg, nullptr, nullptr);
@@ -400,6 +442,14 @@ struct SnakeGame {
 
     // Set vùng click của nút Start
     startButtonRect = {promptX, promptY, w, h};
+
+
+    SDL_Texture* inst = graphics.renderText("INSTRUCTIONS", font, {255, 255, 255, 255});
+    SDL_QueryTexture(inst, nullptr, nullptr, &w, &h);
+
+    graphics.renderTexture(inst, instructionsButtonRect.x, instructionsButtonRect.y);
+    SDL_DestroyTexture(inst);
+
 
     SDL_DestroyTexture(title);
     SDL_DestroyTexture(prompt);
@@ -497,6 +547,8 @@ int main(int argc, char *argv[]) {
     int highscore = readHighScore();
     bool appRunning = true;
     SDL_Rect startButtonRect, restartButtonRect, backButtonRect;
+    SDL_Rect instructionsButtonRect = { SCREEN_WIDTH  / 2 - 100, 350, 200, 50 };
+
 
 while (appRunning) {
     SDL_Event e;
@@ -508,6 +560,15 @@ while (appRunning) {
         else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
             int mouseX = e.button.x;
             int mouseY = e.button.y;
+
+            if (mouseX >= startButtonRect.x && mouseX <= startButtonRect.x + startButtonRect.w &&
+                mouseY >= startButtonRect.y && mouseY <= startButtonRect.y + startButtonRect.h) {
+                currentState = STATE_PLAYING;
+            }
+            if (mouseX >= instructionsButtonRect.x && mouseX <= instructionsButtonRect.x + instructionsButtonRect.w &&
+                mouseY >= instructionsButtonRect.y && mouseY <= instructionsButtonRect.y + instructionsButtonRect.h) {
+                currentState = STATE_INSTRUCTIONS;
+            }
 
             if (currentState == STATE_START) {
                 SDL_Point p = {mouseX, mouseY};
@@ -553,11 +614,22 @@ while (appRunning) {
                 snakeGame.handleInput(e);
             }
         }
+        else if (currentState == STATE_INSTRUCTIONS) {
+            if (e.type == SDL_KEYDOWN || e.type == SDL_MOUSEBUTTONDOWN) {
+                currentState = STATE_START;
+            }
+        }
     }
 
     Uint32 currentFrameTime = SDL_GetTicks();
     float deltaTime = (currentFrameTime - lastFrameTime) / 1000.0f;
     lastFrameTime = currentFrameTime;
+
+    if (currentState == STATE_INSTRUCTIONS) {
+        renderInstructionsScreen(graphics, font);
+        SDL_RenderPresent(graphics.renderer);
+        continue; // bỏ qua update & render game
+    }
 
     // Cập nhật game khi đang chơi
     if (currentState == STATE_PLAYING) {
@@ -573,7 +645,7 @@ while (appRunning) {
     SDL_RenderClear(graphics.renderer);
 
     if (currentState == STATE_START) {
-        renderStartScreen(graphics, font, startButtonRect);
+        renderStartScreen(graphics, font, startButtonRect,instructionsButtonRect);
     }
 
     else if (currentState == STATE_PLAYING) {

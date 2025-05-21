@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1747471580 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
+1747791910 source:c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\main.cpp
 	<bits/stdc++.h>
 	<SDL.h>
 	<SDL_ttf.h>
@@ -10,6 +10,7 @@
 	"defs.h"
 	"logic.h"
 	"highscore.h"
+	"setting.h"
 
 1747106595 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\graphics.h
 	<SDL_ttf.h>
@@ -19,7 +20,7 @@
 	"defs.h"
 	<string>
 
-1747471355 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
+1747792073 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\defs.h
 
 1746284892 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\logic.h
 	<deque>
@@ -27,7 +28,7 @@
 	<cmath>
 	"gameover.h"
 
-1746189270 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\gameover.h
+1747645165 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\gameover.h
 
 1744561496 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\moreeffective.h
 	<unordered_set>
@@ -35,4 +36,6 @@
 
 1746847637 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\highscore.h
 	<fstream>
+
+1747792620 c:\users\admin\onedrive - vnu.edu.vn\documents\s_n_a_k_e\setting.h
 

@@ -40,6 +40,7 @@
 		<Unit filename="logic.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="moreeffective.h" />
+		<Unit filename="setting.h" />
 		<Unit filename="startgame.h" />
 		<Extensions />
 	</Project>
