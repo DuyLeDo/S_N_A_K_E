@@ -65,3 +65,6 @@ Pause/Resume
 Các điểm nổi bật khác: rắn sẽ nổ tung khi người chơi thua và hiển thị điểm nổi sau mỗi lần ăn
 
 Ngưỡng điểm mong muốn: 7-8
+Tham khảo: 
+    Học cùng AI
+    Code và hướng dẫn  của cô Châu
